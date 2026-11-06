@@ -129,3 +129,10 @@ def year_summary(conn, employee_id, year):
     if row['months'] == 0:
         return None
     return row
+
+
+def employee_by_tab(conn, tab_no):
+    """Ищет сотрудника по табельному номеру."""
+    return conn.execute(
+        "SELECT * FROM employees WHERE tab_no = ?", (tab_no,)
+    ).fetchone()
