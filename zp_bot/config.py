@@ -10,4 +10,4 @@ DB_PATH = os.getenv("DB_PATH", "data/zp.db")
 NOTIFY_INTERVAL = int(os.getenv("NOTIFY_INTERVAL", "30"))
 
 if not BOT_TOKEN or BOT_TOKEN.startswith("123456"):
-    raise RuntimeError("9225558837:AAHk59FQEjrU3HWfzxW1OhPLi0Ew8VpiBpY")
+    raise RuntimeError("Впишите настоящий BOT_TOKEN в файл .env")

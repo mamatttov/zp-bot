@@ -59,13 +59,13 @@ def link_employee(conn, code, tg_user_id):
 
 # Выплаты
 
-SOCIAL_FUND_RATE = 0.10
-INCOME_TAX_RATE = 0.10
+SOCIAL_FUND_RATE = 5289
+INCOME_TAX_RATE = 0.05
 KINDS = ('аванс', "зарплата", "премия", "отпускные")
 
 def calc_withholdings(gross):
     """Считает удержания. Возвращает (соцфонд, подоходный, на руки)"""
-    social = round(gross * SOCIAL_FUND_RATE, 2)
+    social = round(SOCIAL_FUND_RATE, 2)
     tax = round((gross - social) * INCOME_TAX_RATE, 2)
     net = round(gross - social - tax, 2)
     return social, tax, net
@@ -136,3 +136,15 @@ def employee_by_tab(conn, tab_no):
     return conn.execute(
         "SELECT * FROM employees WHERE tab_no = ?", (tab_no,)
     ).fetchone()
+
+def new_link_code(conn, tab_no):
+    """Выдаёт сотруднику новый код и отвязывает старый Telegram."""
+    code = secrets.token_hex(3).upper()
+    cur = conn.execute(
+        "UPDATE employees SET link_code = ?, tg_user_id = NULL, linked_at = NULL WHERE tab_no = ?",
+        (code, tab_no),
+    )
+    conn.commit()
+    if cur.rowcount == 0:
+        return None
+    return code
