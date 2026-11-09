@@ -148,3 +148,22 @@ def new_link_code(conn, tab_no):
     if cur.rowcount == 0:
         return None
     return code
+
+
+def pending_notifications(conn):
+    """Выплаты, о которых ещё не сообщили привязанным сотрудникам."""
+    return conn.execute(
+        """SELECT p.*, e.tg_user_id
+           FROM payments p
+           JOIN employees e ON e.id = p.employee_id
+           WHERE p.notified_at IS NULL
+             AND e.tg_user_id IS NOT NULL
+             AND e.is_active = 1
+           ORDER BY p.paid_at, p.id"""
+    ).fetchall()
+
+
+def mark_notified(conn, payment_id):
+    """Отмечает, что уведомление о выплате отправлено."""
+    conn.execute("UPDATE payments SET notified_at = ? WHERE id = ?", (now(), payment_id))
+    conn.commit()
