@@ -56,6 +56,8 @@ def link_employee(conn, code, tg_user_id):
     conn.commit()
     return employee_by_tg(conn, tg_user_id)
 
+KINDS = ("аванс", "зарплата", "премия", "отпускные")
+
 
 def add_payment(conn, employee_id, period, kind, gross, social, tax, other, paid_at, notified=False):
     """Записывает выплату с готовыми удержаниями из ведомости, без пересчёта."""
