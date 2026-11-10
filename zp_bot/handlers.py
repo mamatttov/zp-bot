@@ -1,5 +1,6 @@
 """Команды и кнопки бота."""
 from datetime import date
+import time
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandObject, CommandStart
@@ -8,7 +9,23 @@ from aiogram.types import Message
 from . import db, texts
 from .keyboards import BTN_HISTORY, BTN_LAST, BTN_YEAR, main_menu
 
+from html import escape
+
 router = Router()
+router.message.filter(F.chat.type == "private")
+
+MAX_ATTEMPTS = 5
+WINDOW = 3600
+failed_attempts = {}
+
+
+def too_many_attempts(user_id):
+    """True, если за последний час было 5+ неверных кодов."""
+    now = time.time()
+    recent = [t for t in failed_attempts.get(user_id, []) if now - t < WINDOW]
+    failed_attempts[user_id] = recent
+    return len(recent) >= MAX_ATTEMPTS
+
 
 HELP = (
     "<b>Что я умею</b>\n"
@@ -26,7 +43,7 @@ async def cmd_start(message: Message, conn):
     if emp is None:
         await message.answer("Здравствуйте! Я присылаю уведомления о зарплате.\n\n" + ASK_CODE)
     else:
-        await message.answer(f"С возвращением, {emp['full_name']}!\n\n{HELP}", reply_markup=main_menu)
+        await message.answer(f"С возвращением, {escape(emp['full_name'])}!\n\n{HELP}", reply_markup=main_menu)
 
 
 @router.message(Command("link"))
@@ -34,12 +51,19 @@ async def cmd_link(message: Message, command: CommandObject, conn):
     if not command.args:
         await message.answer(ASK_CODE)
         return
-    emp = db.link_employee(conn, command.args, message.from_user.id)
+    user_id = message.from_user.id
+    if too_many_attempts(user_id):
+        await message.answer("Слишком много неверных кодов. Попробуйте через час.")
+        return
+    if db.employee_by_tg(conn, user_id) is not None:
+        await message.answer("Этот Telegram уже привязан. /help — список команд.")
+        return
+    emp = db.link_employee(conn, command.args, user_id)
     if emp is None:
+        failed_attempts.setdefault(user_id, []).append(time.time())
         await message.answer("Код не найден или уже использован.")
         return
-    await message.answer(f"Готово, {emp['full_name']}!\n\n{HELP}", reply_markup=main_menu)
-
+    await message.answer(f"Готово, {escape(emp['full_name'])}!\n\n{HELP}", reply_markup=main_menu)
 
 async def get_employee(message: Message, conn):
     """Сотрудник, который пишет боту. Не привязан — просим код."""
