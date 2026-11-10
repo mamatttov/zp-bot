@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS payments (
     gross        REAL    NOT NULL CHECK (gross >= 0),
     social_fund  REAL    NOT NULL DEFAULT 0,
     income_tax   REAL    NOT NULL DEFAULT 0,
+    other_withheld REAL  NOT NULL DEFAULT 0,
     net          REAL    NOT NULL,
     paid_at      TEXT    NOT NULL,
     notified_at  TEXT
@@ -34,7 +35,7 @@ CREATE VIEW IF NOT EXISTS v_monthly AS
 SELECT employee_id,
        period,
        ROUND(SUM(gross), 2)                    AS gross,
-       ROUND(SUM(social_fund + income_tax), 2) AS withheld,
+       ROUND(SUM(social_fund + income_tax + other_withheld), 2) AS withheld,
        ROUND(SUM(net), 2)                      AS net,
        COUNT(*)                                AS payments_cnt
 FROM payments

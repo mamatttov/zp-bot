@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
+# Настоящие ведомости и отчёты: только локально
+*.xlsx
+!sample/*.xlsx

@@ -22,16 +22,20 @@ def date_ru(iso):
     return f"{d}.{m}.{y}"
 
 
-def payment_card(p, title = "Выплата"):
-    """Карточка одной выплаты"""
-    return (
-        f"<b>{title}: {p['kind']}</b> за {period_name(p['period'])}\n"
-        f"Дата: {date_ru(p['paid_at'])}\n\n"
-        f"Начислено: {money(p['gross'])}\n"
-        f"Соцфонд: −{money(p['social_fund'])}\n"
-        f"Подоходный налог: −{money(p['income_tax'])}\n"
-        f"<b>На руки: {money(p['net'])}</b>"
-    )
+def payment_card(p, title="Выплата"):
+    """Карточка одной выплаты."""
+    lines = [
+        f"<b>{title}: {p['kind']}</b> за {period_name(p['period'])}",
+        f"Дата: {date_ru(p['paid_at'])}",
+        "",
+        f"Начислено: {money(p['gross'])}",
+        f"Соцфонд: −{money(p['social_fund'])}",
+        f"Подоходный налог: −{money(p['income_tax'])}",
+    ]
+    if p["other_withheld"]:
+        lines.append(f"Прочие удержания: −{money(p['other_withheld'])}")
+    lines.append(f"<b>На руки: {money(p['net'])}</b>")
+    return "\n".join(lines)
 
 
 def history(rows):

@@ -167,3 +167,37 @@ def mark_notified(conn, payment_id):
     """Отмечает, что уведомление о выплате отправлено."""
     conn.execute("UPDATE payments SET notified_at = ? WHERE id = ?", (now(), payment_id))
     conn.commit()
+
+def employee_by_name(conn, full_name):
+    """Ищет сотрудника по ФИО (в ведомости 1С нет табельных номеров)."""
+    return conn.execute(
+        "SELECT * FROM employees WHERE full_name = ?", (full_name,)
+    ).fetchone()
+
+
+def next_tab_no(conn):
+    """Следующий свободный табельный: '0001', '0002', ..."""
+    row = conn.execute("SELECT MAX(CAST(tab_no AS INTEGER)) AS m FROM employees").fetchone()
+    return f"{(row['m'] or 0) + 1:04d}"
+
+
+def has_salary(conn, employee_id, period):
+    """Есть ли уже зарплата сотрудника за этот месяц (защита от двойной загрузки)."""
+    row = conn.execute(
+        "SELECT 1 FROM payments WHERE employee_id = ? AND period = ? AND kind = 'зарплата'",
+        (employee_id, period),
+    ).fetchone()
+    return row is not None
+
+
+def add_payment_exact(conn, employee_id, period, kind, gross, social, tax, other, paid_at):
+    """Записывает выплату с готовыми удержаниями из 1С, без пересчёта."""
+    net = round(gross - social - tax - other, 2)
+    cur = conn.execute(
+        """INSERT INTO payments
+               (employee_id, period, kind, gross, social_fund, income_tax, other_withheld, net, paid_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (employee_id, period, kind, gross, social, tax, other, net, paid_at),
+    )
+    conn.commit()
+    return cur.lastrowid
