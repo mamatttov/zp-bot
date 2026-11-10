@@ -37,9 +37,10 @@ def import_payments(conn, path):
             print(f"! строка {line_no}: нет сотрудника {row['tab_no']}")
             continue
         try:
-            gross = float(row["gross"].replace(",", ".").replace(" ", ""))
+            num = lambda key: float(row[key].replace(",", ".").replace(" ", "") or 0)
             db.add_payment(conn, emp["id"], row["period"].strip(), row["kind"].strip(),
-                           gross, row["paid_at"].strip())
+                           num("gross"), num("social_fund"), num("income_tax"),
+                           num("other_withheld"), row["paid_at"].strip())
             added += 1
         except (ValueError, sqlite3.IntegrityError) as e:
             print(f"! строка {line_no}: {e}")

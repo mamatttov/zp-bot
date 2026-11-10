@@ -13,3 +13,5 @@ __pycache__/
 # Настоящие ведомости и отчёты: только локально
 *.xlsx
 !sample/*.xlsx
+demo.py
+proverka.py

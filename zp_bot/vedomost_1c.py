@@ -124,7 +124,7 @@ def import_vedomost(conn, path, paid_at):
         if db.has_salary(conn, emp["id"], period):
             print(f"= {p['full_name']}: зарплата за {period} уже загружена")
             continue
-        db.add_payment_exact(conn, emp["id"], period, "зарплата",
+        db.add_payment(conn, emp["id"], period, "зарплата",
                              p["gross"], p["social"], p["tax"], p["other"], paid_at)
         added += 1
     print(f"Добавлено выплат: {added}")

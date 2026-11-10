@@ -57,31 +57,18 @@ def link_employee(conn, code, tg_user_id):
     return employee_by_tg(conn, tg_user_id)
 
 
-# Выплаты
-
-SOCIAL_FUND_RATE = 5289
-INCOME_TAX_RATE = 0.05
-KINDS = ('аванс', "зарплата", "премия", "отпускные")
-
-def calc_withholdings(gross):
-    """Считает удержания. Возвращает (соцфонд, подоходный, на руки)"""
-    social = round(SOCIAL_FUND_RATE, 2)
-    tax = round((gross - social) * INCOME_TAX_RATE, 2)
-    net = round(gross - social - tax, 2)
-    return social, tax, net
-
-
-def add_payment(conn, employee_id, period, kind, gross, paid_at, notified = False):
-    """Записывает выплату и возвращает ее id"""
+def add_payment(conn, employee_id, period, kind, gross, social, tax, other, paid_at, notified=False):
+    """Записывает выплату с готовыми удержаниями из ведомости, без пересчёта."""
     if kind not in KINDS:
-        raise ValueError(f"Неизвестный вид оплаты: {kind}")
-    social, tax, net = calc_withholdings(gross)
+        raise ValueError(f"Неизвестный вид выплаты: {kind}")
+    net = round(gross - social - tax - other, 2)
     notified_at = now() if notified else None
     cur = conn.execute(
         """INSERT INTO payments
-                (employee_id, period, kind, gross, social_fund, income_tax, net, paid_at, notified_at)
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (employee_id, period, kind, gross, social, tax, net, paid_at, notified_at),
+               (employee_id, period, kind, gross, social_fund, income_tax,
+                other_withheld, net, paid_at, notified_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (employee_id, period, kind, gross, social, tax, other, net, paid_at, notified_at),
     )
     conn.commit()
     return cur.lastrowid
@@ -190,14 +177,3 @@ def has_salary(conn, employee_id, period):
     return row is not None
 
 
-def add_payment_exact(conn, employee_id, period, kind, gross, social, tax, other, paid_at):
-    """Записывает выплату с готовыми удержаниями из 1С, без пересчёта."""
-    net = round(gross - social - tax - other, 2)
-    cur = conn.execute(
-        """INSERT INTO payments
-               (employee_id, period, kind, gross, social_fund, income_tax, other_withheld, net, paid_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (employee_id, period, kind, gross, social, tax, other, net, paid_at),
-    )
-    conn.commit()
-    return cur.lastrowid
