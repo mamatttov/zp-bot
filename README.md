@@ -1,4 +1,5 @@
 # zp-bot
+[![tests](https://github.com/mamatttov/zp-bot/actions/workflows/tests.yml/badge.svg)](https://github.com/mamatttov/zp-bot/actions/workflows/tests.yml)
 
 Telegram-бот для уведомления сотрудников о выплате заработной платы.
 
