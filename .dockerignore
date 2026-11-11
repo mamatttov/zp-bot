@@ -1,0 +1,11 @@
+.env
+.git
+.github
+.venv
+data
+tests
+__pycache__
+*.pyc
+*.db
+*.xlsx
+!sample/*.xlsx
