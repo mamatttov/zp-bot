@@ -9,7 +9,12 @@ from aiogram.types import BotCommand
 
 from . import config, db
 from .handlers import router
+from .logs import setup_logging
 from .notifier import notifier_loop
+
+
+log = logging.getLogger(__name__)
+
 
 COMMANDS = [
     BotCommand(command="start", description="Начать"),
@@ -21,7 +26,7 @@ COMMANDS = [
 
 
 async def main():
-    logging.basicConfig(level=logging.INFO)
+    setup_logging()
     conn = db.connect(config.DB_PATH)
     bot = Bot(config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
@@ -30,11 +35,13 @@ async def main():
 
     await bot.set_my_commands(COMMANDS)
     task = asyncio.create_task(notifier_loop(bot, conn, config.NOTIFY_INTERVAL))
+    log.info("Бот запущен, база %s, проверка выплат каждые %s с", config.DB_PATH, config.NOTIFY_INTERVAL)
     try:
         await dp.start_polling(bot)
     finally:
         task.cancel()
         conn.close()
+        log.info("Бот остановлен")
 
 
 if __name__ == "__main__":
